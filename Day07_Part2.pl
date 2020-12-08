@@ -7,6 +7,7 @@ use strict;
 use warnings;
 use Perl6::Slurp;
 use List::Util qw( uniq );
+use Data::Dumper;
 
 $, = '|';
 $\ = "\n";
@@ -18,41 +19,23 @@ while ( <DATA> ) {
     my ( $main, $subs )	= split /\scontain\s/;
     $main   =~ s/\sbags//;
     $subs   =~ s/\.$//;
-    if ( $subs =~ m/no other/ ) {
-		next;
-	}
-    $BAGS{ $main }  = index_bags( $subs )   # returns an arrayref
+    $BAGS{ $main }  = index_bags( $subs )   # arrayref
 		    ;
-    if ( $subs =~ m/shiny gold/ ) {
-		push @holds_gold, $main;
-    }
 }
 
+my $target	= 'shiny gold';
 my $total = 0;
-my $count = 0;
-#print @holds_gold;
-foreach my $k ( sort keys %BAGS ) {
-	$count = 0;
-	find_gold( $k );
-	if ( $count > 0 ) {
-		$total++;
-	}
-}
-print $total;   #1456 is too high
-				# 596 is too high
-				# 23 is wrong
+count_bags( $target );
 
-sub find_gold {
-	my $bag			= shift;
-	return 0 unless exists $BAGS{ $bag };
-	my @sub_bags	= @{ $BAGS{ $bag } };
-	if ( grep { /$bag/ } @holds_gold ) {
-		print $bag;
-		$count++;
-		return;
-	}
-	foreach ( @sub_bags ) {
-		find_gold( $_ );
+print $total; 
+
+sub count_bags {
+	my $bag	= shift;
+	$total	+= @{ $BAGS{ $bag } };
+	print @{ $BAGS{ $bag } } 
+		if @{ $BAGS{ $bag } } > 0;
+	foreach my $b ( @{ $BAGS{ $bag } } ) {
+		count_bags( $b );
 	}
 }
 
@@ -61,13 +44,21 @@ sub index_bags {
     my @set;
     my @bags	= split /,\s/, $str;
     foreach ( @bags ) {
-		m/(\d+)\s(\w+\s\w+)\sbags?$/;
-		#push @set, { $2 => $1 };
-		push @set, $2;
+		if ( m/no other/ ) {
+			#push @set, {};
+			next;
+		}
+		else {
+			m/(\d+)\s(\w+\s\w+)\sbags?$/;
+			#push @set, { $2 => $1 };
+			#push @set, $2;
+			push @set, ($2) x $1;
+		}
     }
     #print @set;
     return \@set;
 }
+
 __DATA__
 dark olive bags contain 2 muted brown bags, 1 mirrored tomato bag, 4 bright black bags.
 faded coral bags contain 3 drab cyan bags, 1 light aqua bag.
